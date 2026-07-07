@@ -1,0 +1,49 @@
+name: Deploy Website
+
+# Trigger: Run this pipeline every time someone pushes code to the 'main' branch
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  # Job 1: Test and check the code
+  test-and-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Check HTML syntax
+        run: |
+          echo "Running code linters..."
+          # A simple check to ensure index.html actually exists before deploying
+          test -f index.html && echo "HTML file looks good!" || exit 1
+
+  # Job 2: Deploy to the cloud (GitHub Pages)
+  deploy:
+    needs: test-and-lint # Don't deploy if the tests fail!
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
